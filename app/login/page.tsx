@@ -1,121 +1,104 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import Link from "next/link"
+import { Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Package, User, Store } from "lucide-react"
-import { authService } from "@/lib/mock-services"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { authService } from "@/lib/auth-service"
+
+const schema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+})
+
+type FormValues = z.infer<typeof schema>
 
 export default function LoginPage() {
   const router = useRouter()
-  const [loading, setLoading] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const registered = searchParams.get("registered") === "true"
 
-  const handleLogin = async (email: string, role: "buyer" | "seller") => {
-    setLoading(email)
-    const user = await authService.login(email)
+  const [serverError, setServerError] = useState<string | null>(null)
 
-    if (user) {
-      // Redirect based on role
-      if (role === "seller") {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<FormValues>({ resolver: zodResolver(schema) })
+
+  const onSubmit = async (values: FormValues) => {
+    setServerError(null)
+    try {
+      const user = await authService.login(values.email, values.password)
+      if (user.role === "seller") {
         router.push("/seller")
       } else {
         router.push("/")
       }
       router.refresh()
+    } catch (err: unknown) {
+      const e = err as { error?: string }
+      setServerError(e?.error ?? "Invalid credentials")
     }
-
-    setLoading(null)
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
-      <div className="w-full max-w-4xl">
-        {/* Logo */}
+      <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2 mb-8">
           <Package className="size-8" />
           <h1 className="text-3xl font-bold">Marketplace</h1>
         </div>
 
-        {/* Login Options */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Buyer Login */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="text-center">
-              <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <User className="size-8 text-primary" />
-              </div>
-              <CardTitle className="text-2xl">Login as Buyer</CardTitle>
-              <CardDescription>Browse and purchase products from sellers</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <h4 className="font-medium text-sm">As a buyer, you can:</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Browse product catalog</li>
-                  <li>• Add items to cart</li>
-                  <li>• Place orders</li>
-                  <li>• Track order history</li>
-                </ul>
-              </div>
-              <div className="pt-4 space-y-2">
-                <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
-                  <p className="font-medium">Test Email:</p>
-                  <p className="font-mono">user@buyer.com</p>
-                </div>
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={() => handleLogin("user@buyer.com", "buyer")}
-                  disabled={loading !== null}
-                >
-                  {loading === "user@buyer.com" ? "Logging in..." : "Login as Buyer"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        {registered && (
+          <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+            Account created! You can now log in.
+          </div>
+        )}
 
-          {/* Seller Login */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="text-center">
-              <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <Store className="size-8 text-primary" />
+        <Card>
+          <CardHeader>
+            <CardTitle>Sign in</CardTitle>
+            <CardDescription>Enter your email and password to continue</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div className="space-y-1">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" placeholder="you@example.com" {...register("email")} />
+                {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
               </div>
-              <CardTitle className="text-2xl">Login as Seller</CardTitle>
-              <CardDescription>Manage your products and orders</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <h4 className="font-medium text-sm">As a seller, you can:</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Manage your products</li>
-                  <li>• View sales analytics</li>
-                  <li>• Process orders</li>
-                  <li>• Track inventory</li>
-                </ul>
-              </div>
-              <div className="pt-4 space-y-2">
-                <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
-                  <p className="font-medium">Test Email:</p>
-                  <p className="font-mono">user@seller.com</p>
-                </div>
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={() => handleLogin("user@seller.com", "seller")}
-                  disabled={loading !== null}
-                >
-                  {loading === "user@seller.com" ? "Logging in..." : "Login as Seller"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Footer */}
-        <p className="text-center text-sm text-muted-foreground mt-8">
-          This is a demo application with mocked authentication.
-        </p>
+              <div className="space-y-1">
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" type="password" placeholder="••••••••" {...register("password")} />
+                {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+              </div>
+
+              {serverError && (
+                <p className="text-sm text-destructive">{serverError}</p>
+              )}
+
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Signing in..." : "Sign in"}
+              </Button>
+            </form>
+
+            <p className="mt-4 text-center text-sm text-muted-foreground">
+              Don&apos;t have an account?{" "}
+              <Link href="/register" className="underline underline-offset-4 hover:text-foreground">
+                Register
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

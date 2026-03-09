@@ -113,53 +113,5 @@ export const sellerService = {
   },
 }
 
-export type UserRole = "buyer" | "seller"
-
-export interface User {
-  id: string
-  name: string
-  email: string
-  role: UserRole
-}
-
-export const authService = {
-  currentUser: null as User | null,
-
-  login: async (email: string): Promise<User | null> => {
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    if (email === "user@buyer.com") {
-      const user: User = {
-        id: "1",
-        name: "John Doe",
-        email: "user@buyer.com",
-        role: "buyer",
-      }
-      authService.currentUser = user
-      return user
-    } else if (email === "user@seller.com") {
-      const user: User = {
-        id: "s1",
-        name: "TechGear Store",
-        email: "user@seller.com",
-        role: "seller",
-      }
-      authService.currentUser = user
-      return user
-    }
-
-    return null
-  },
-
-  logout: () => {
-    authService.currentUser = null
-  },
-
-  getCurrentUser: (): User | null => {
-    return authService.currentUser
-  },
-
-  isAuthenticated: (): boolean => {
-    return authService.currentUser !== null
-  },
-}
+export type { UserRole, User } from "./auth-service"
+export { authService } from "./auth-service"
