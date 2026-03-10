@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ShoppingCart, Check, Minus, Plus } from "lucide-react"
 import { cartService } from "@/lib/mock-services"
-import type { Product } from "@/lib/mock-data"
+import type { Product } from "@/lib/product-service"
 
 interface AddToCartButtonProps {
   product: Product

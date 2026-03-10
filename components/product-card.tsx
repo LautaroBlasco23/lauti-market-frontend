@@ -2,7 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import type { Product } from "@/lib/mock-data"
+import type { Product } from "@/lib/product-service"
 
 interface ProductCardProps {
   product: Product
@@ -14,7 +14,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <Card className="group overflow-hidden transition-all hover:shadow-md cursor-pointer h-full">
         <div className="relative aspect-square overflow-hidden bg-muted">
           <Image
-            src={product.image || "/placeholder.svg"}
+            src={product.image_url || "/placeholder.svg"}
             alt={product.name}
             fill
             className="object-cover transition-transform group-hover:scale-105"
@@ -40,7 +40,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
           <div className="flex items-center justify-between mt-2">
             <span className="text-lg font-bold">${product.price.toFixed(2)}</span>
-            <span className="text-xs text-muted-foreground">by {product.sellerName}</span>
+            <span className="text-xs text-muted-foreground">by {product.store_id}</span>
           </div>
         </CardContent>
       </Card>

@@ -1,12 +1,16 @@
 import { ProductCard } from "@/components/product-card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { mockProducts, mockCategories } from "@/lib/mock-data"
 import { Search, Package } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { productService } from "@/lib/product-service"
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { products } = await productService.getAllProducts({ limit: 100 }).catch(() => ({ products: [] }))
+
+  const categories = ["All", ...Array.from(new Set(products.map((p) => p.category))).sort()]
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
@@ -29,7 +33,7 @@ export default function HomePage() {
         {/* Category Filter */}
         <div className="mb-8">
           <div className="flex items-center gap-2 flex-wrap justify-center">
-            {mockCategories.map((category) => (
+            {categories.map((category) => (
               <Badge
                 key={category}
                 variant={category === "All" ? "default" : "outline"}
@@ -42,14 +46,13 @@ export default function HomePage() {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {mockProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-
-        {/* Empty State (shown when no products) */}
-        {mockProducts.length === 0 && (
+        {products.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
           <div className="text-center py-12">
             <Package className="size-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No products found</h3>

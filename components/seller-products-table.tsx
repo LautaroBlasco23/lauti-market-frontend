@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2 } from "lucide-react"
-import type { Product } from "@/lib/mock-data"
+import type { Product } from "@/lib/product-service"
 import Image from "next/image"
 
 interface SellerProductsTableProps {
@@ -26,7 +26,6 @@ export function SellerProductsTable({ products }: SellerProductsTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead>Product</TableHead>
-            <TableHead>Category</TableHead>
             <TableHead>Price</TableHead>
             <TableHead>Stock</TableHead>
             <TableHead>Status</TableHead>
@@ -39,7 +38,7 @@ export function SellerProductsTable({ products }: SellerProductsTableProps) {
               <TableCell>
                 <div className="flex items-center gap-3">
                   <div className="relative size-12 rounded-md overflow-hidden bg-muted shrink-0">
-                    <Image src={product.image || "/placeholder.svg"} alt={product.name} fill className="object-cover" />
+                    <Image src={product.image_url || "/placeholder.svg"} alt={product.name} fill className="object-cover" />
                   </div>
                   <div className="min-w-0">
                     <p className="font-medium line-clamp-1">{product.name}</p>
@@ -47,9 +46,7 @@ export function SellerProductsTable({ products }: SellerProductsTableProps) {
                   </div>
                 </div>
               </TableCell>
-              <TableCell>
-                <Badge variant="outline">{product.category}</Badge>
-              </TableCell>
+
               <TableCell className="font-medium">${product.price.toFixed(2)}</TableCell>
               <TableCell>
                 {product.stock > 0 ? (

@@ -6,10 +6,10 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, Package, Store } from "lucide-react"
-import { mockProducts } from "@/lib/mock-data"
 import { AddToCartButton } from "@/components/add-to-cart-button"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { productService } from "@/lib/product-service"
 
 interface ProductPageProps {
   params: Promise<{ id: string }>
@@ -17,7 +17,9 @@ interface ProductPageProps {
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { id } = await params
-  const product = mockProducts.find((p) => p.id === id)
+
+  const { products } = await productService.getAllProducts({ limit: 1000 }).catch(() => ({ products: [] }))
+  const product = products.find((p) => p.id === id)
 
   if (!product) {
     notFound()
@@ -40,7 +42,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           {/* Product Image */}
           <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
             <Image
-              src={product.image || "/placeholder.svg"}
+              src={product.image_url || "/placeholder.svg"}
               alt={product.name}
               fill
               className="object-cover"
@@ -90,7 +92,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Sold by</p>
-                    <p className="font-semibold">{product.sellerName}</p>
+                    <p className="font-semibold">{product.store_id}</p>
                   </div>
                 </div>
                 <Button variant="outline" className="w-full bg-transparent">
@@ -110,15 +112,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   </div>
                   <div>
                     <p className="text-muted-foreground">Product ID</p>
-                    <p className="font-medium">#{product.id}</p>
+                    <p className="font-medium truncate">#{product.id}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Availability</p>
                     <p className="font-medium">{product.stock > 0 ? "In Stock" : "Out of Stock"}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Seller</p>
-                    <p className="font-medium">{product.sellerName}</p>
                   </div>
                 </div>
               </CardContent>

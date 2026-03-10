@@ -1,46 +1,53 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { DollarSign, TrendingUp, Plus, Package, ShoppingBag } from "lucide-react"
-import { mockProducts, mockOrders } from "@/lib/mock-data"
+import { mockOrders } from "@/lib/mock-data"
 import { SellerProductsTable } from "@/components/seller-products-table"
 import { SellerOrdersTable } from "@/components/seller-orders-table"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { authService } from "@/lib/mock-services"
+import { productService, type Product } from "@/lib/product-service"
 import { useRouter } from "next/navigation"
 
 export default function SellerDashboard() {
   const router = useRouter()
-
-  useEffect(() => {
-    const user = authService.getCurrentUser()
-    if (!user) {
-      router.push("/login")
-    } else if (user.role !== "seller") {
-      router.push("/")
-    }
-  }, [router])
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
 
   const user = authService.getCurrentUser()
+
+  useEffect(() => {
+    if (!user) {
+      router.push("/login")
+      return
+    }
+    if (user.role !== "seller") {
+      router.push("/")
+      return
+    }
+
+    productService
+      .getStoreProducts(user.id)
+      .then(setProducts)
+      .catch(() => setProducts([]))
+      .finally(() => setLoading(false))
+  }, [router, user?.id])
 
   if (!user || user.role !== "seller") {
     return null
   }
 
-  // Filter products and orders for the current seller
-  const sellerProducts = mockProducts.filter((p) => p.sellerId === user.id)
-  const sellerProductIds = sellerProducts.map((p) => p.id)
-  const sellerOrders = mockOrders.filter((o) => sellerProductIds.includes(o.productId))
+  const productIds = products.map((p) => p.id)
+  const sellerOrders = mockOrders.filter((o) => productIds.includes(o.productId))
 
-  // Calculate stats
   const totalRevenue = sellerOrders.reduce((sum, order) => sum + order.total, 0)
   const pendingOrders = sellerOrders.filter((o) => o.status === "pending" || o.status === "processing").length
-  const totalProducts = sellerProducts.length
 
   return (
     <div className="min-h-screen bg-background">
@@ -75,7 +82,7 @@ export default function SellerDashboard() {
                 <p className="text-sm text-muted-foreground">Products</p>
                 <Package className="size-4 text-muted-foreground" />
               </div>
-              <p className="text-3xl font-bold">{totalProducts}</p>
+              <p className="text-3xl font-bold">{products.length}</p>
               <p className="text-xs text-muted-foreground">Active listings</p>
             </CardContent>
           </Card>
@@ -120,7 +127,11 @@ export default function SellerDashboard() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <SellerProductsTable products={sellerProducts} />
+            {loading ? (
+              <div className="text-center py-12 text-muted-foreground">Loading products...</div>
+            ) : (
+              <SellerProductsTable products={products} />
+            )}
           </CardContent>
         </Card>
 

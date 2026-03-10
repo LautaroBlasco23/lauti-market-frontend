@@ -33,7 +33,7 @@ export function CheckoutSummary() {
             <div key={item.product.id} className="flex gap-3">
               <div className="relative size-16 rounded-md overflow-hidden bg-muted shrink-0">
                 <Image
-                  src={item.product.image || "/placeholder.svg"}
+                  src={item.product.image_url || "/placeholder.svg"}
                   alt={item.product.name}
                   fill
                   className="object-cover"

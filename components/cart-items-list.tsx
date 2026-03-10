@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react"
 import { cartService } from "@/lib/mock-services"
-import type { Product } from "@/lib/mock-data"
+import type { Product } from "@/lib/product-service"
 
 interface CartItem {
   product: Product
@@ -65,7 +65,7 @@ export function CartItemsList() {
                   className="relative size-24 rounded-md overflow-hidden bg-muted shrink-0"
                 >
                   <Image
-                    src={item.product.image || "/placeholder.svg"}
+                    src={item.product.image_url || "/placeholder.svg"}
                     alt={item.product.name}
                     fill
                     className="object-cover"
@@ -82,7 +82,7 @@ export function CartItemsList() {
                       >
                         {item.product.name}
                       </Link>
-                      <p className="text-sm text-muted-foreground mt-1">by {item.product.sellerName}</p>
+                      <p className="text-sm text-muted-foreground mt-1">by {item.product.store_id}</p>
                     </div>
                     <Button variant="ghost" size="icon-sm" onClick={() => removeItem(item.product.id)}>
                       <Trash2 className="size-4" />

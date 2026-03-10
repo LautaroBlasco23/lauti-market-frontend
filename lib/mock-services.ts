@@ -1,6 +1,7 @@
 // Mock services for the marketplace
 
 import { type Product, mockProducts, type Order, mockOrders } from "./mock-data"
+import type { Product as ApiProduct } from "./product-service"
 
 export const productService = {
   getAllProducts: async (): Promise<Product[]> => {
@@ -33,9 +34,9 @@ export const productService = {
 }
 
 export const cartService = {
-  items: [] as Array<{ product: Product; quantity: number }>,
+  items: [] as Array<{ product: ApiProduct; quantity: number }>,
 
-  addToCart: (product: Product, quantity = 1) => {
+  addToCart: (product: ApiProduct, quantity = 1) => {
     const existingItem = cartService.items.find((item) => item.product.id === product.id)
     if (existingItem) {
       existingItem.quantity += quantity
