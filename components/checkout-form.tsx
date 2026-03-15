@@ -10,23 +10,41 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { CreditCard, Loader2 } from "lucide-react"
 import { cartService } from "@/lib/mock-services"
+import { orderService } from "@/lib/order-service"
 
 export function CheckoutForm() {
   const router = useRouter()
   const [isProcessing, setIsProcessing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsProcessing(true)
+    setError(null)
 
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    const items = cartService.getCart()
 
-    // Clear cart after successful order
-    cartService.clearCart()
+    // Group items by store_id (backend requires one order per store)
+    const byStore = new Map<string, { product_id: string; quantity: number }[]>()
+    for (const { product, quantity } of items) {
+      const storeItems = byStore.get(product.store_id) ?? []
+      storeItems.push({ product_id: product.id, quantity })
+      byStore.set(product.store_id, storeItems)
+    }
 
-    // Redirect to success page
-    router.push("/checkout/success")
+    try {
+      await Promise.all(
+        Array.from(byStore.entries()).map(([store_id, storeItems]) =>
+          orderService.createOrder({ store_id, items: storeItems }),
+        ),
+      )
+      cartService.clearCart()
+      router.push("/checkout/success")
+    } catch (err: unknown) {
+      const msg = (err as { error?: string })?.error ?? "Failed to place order. Please try again."
+      setError(msg)
+      setIsProcessing(false)
+    }
   }
 
   return (
@@ -120,6 +138,8 @@ export function CheckoutForm() {
           </div>
         </CardContent>
       </Card>
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       <Button type="submit" size="lg" className="w-full" disabled={isProcessing}>
         {isProcessing ? (

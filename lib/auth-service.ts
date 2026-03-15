@@ -31,24 +31,31 @@ interface RegisterStoreData {
   phone_number: string
 }
 
-function toUser(res: LoginResponse, email: string): User {
-  const localPart = email.split("@")[0]
-  return {
-    id: res.account_id,
-    name: localPart,
-    email,
-    role: res.account_type === "user" ? "buyer" : "seller",
-  }
-}
-
 export const authService = {
   login: async (email: string, password: string): Promise<User> => {
     const res = await apiFetch<LoginResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     })
-    const user = toUser(res, email)
+
+    // Store token before fetching profile (apiFetch reads it from localStorage)
     localStorage.setItem("auth_token", res.token)
+
+    let name: string
+    if (res.account_type === "user") {
+      const profile = await apiFetch<{ first_name: string; last_name: string }>(`/users/${res.account_id}`)
+      name = `${profile.first_name} ${profile.last_name}`.trim()
+    } else {
+      const store = await apiFetch<{ name: string }>(`/stores/${res.account_id}`)
+      name = store.name
+    }
+
+    const user: User = {
+      id: res.account_id,
+      name,
+      email,
+      role: res.account_type === "user" ? "buyer" : "seller",
+    }
     localStorage.setItem("auth_user", JSON.stringify(user))
     return user
   },

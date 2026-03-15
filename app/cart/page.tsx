@@ -9,7 +9,7 @@ import { CartItemsList } from "@/components/cart-items-list"
 import { CartSummary } from "@/components/cart-summary"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { authService } from "@/lib/mock-services"
+import { authService } from "@/lib/auth-service"
 
 export default function CartPage() {
   const router = useRouter()
