@@ -2,11 +2,11 @@ import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { productService } from "@/lib/product-service"
+import { productService, type Product } from "@/lib/product-service"
 import { ProductCatalog } from "@/components/product-catalog"
 
 export default async function HomePage() {
-  const { products } = await productService.getAllProducts({ limit: 100 }).catch(() => ({ products: [] }))
+  const { products } = await productService.getAllProducts({ limit: 100 }).catch(() => ({ products: [] as Product[] }))
 
   const categories = ["All", ...Array.from(new Set(products.map((p) => p.category))).sort()]
 
