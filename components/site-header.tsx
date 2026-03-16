@@ -13,7 +13,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { cartService, authService } from "@/lib/mock-services"
+import { cartService } from "@/lib/mock-services"
+import { authService } from "@/lib/auth-service"
 
 export function SiteHeader() {
   const router = useRouter()

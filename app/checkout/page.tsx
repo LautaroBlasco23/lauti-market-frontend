@@ -9,7 +9,7 @@ import { CheckoutForm } from "@/components/checkout-form"
 import { CheckoutSummary } from "@/components/checkout-summary"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { authService } from "@/lib/mock-services"
+import { authService } from "@/lib/auth-service"
 
 export default function CheckoutPage() {
   const router = useRouter()

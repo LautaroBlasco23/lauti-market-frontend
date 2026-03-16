@@ -95,8 +95,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     <p className="font-semibold">{product.store_id}</p>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full bg-transparent">
-                  Visit Store
+                <Button variant="outline" className="w-full bg-transparent" asChild>
+                  <Link href={`/stores/${product.store_id}`}>Visit Store</Link>
                 </Button>
               </CardContent>
             </Card>
