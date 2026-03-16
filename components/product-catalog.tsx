@@ -4,12 +4,7 @@ import { useState } from "react"
 import { ProductCard } from "@/components/product-card"
 import { Badge } from "@/components/ui/badge"
 import { Package } from "lucide-react"
-
-interface Product {
-  id: string | number
-  category: string
-  [key: string]: unknown
-}
+import type { Product } from "@/lib/product-service"
 
 interface ProductCatalogProps {
   products: Product[]
@@ -46,7 +41,7 @@ export function ProductCatalog({ products, categories }: ProductCatalogProps) {
       {filtered.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {filtered.map((product) => (
-            <ProductCard key={product.id} product={product as Parameters<typeof ProductCard>[0]["product"]} />
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       ) : (
