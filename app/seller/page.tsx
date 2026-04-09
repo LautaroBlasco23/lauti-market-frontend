@@ -10,29 +10,20 @@ import { SellerProductsTable } from "@/components/seller-products-table"
 import { SellerOrdersTable } from "@/components/seller-orders-table"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { authService } from "@/lib/auth-service"
 import { productService, type Product } from "@/lib/product-service"
 import { orderService, type Order } from "@/lib/order-service"
-import { useRouter } from "next/navigation"
+import { useRequireAuth } from "@/contexts/auth-context"
 
 export default function SellerDashboard() {
-  const router = useRouter()
+  const { user, isLoading: authLoading } = useRequireAuth(["seller"])
   const [products, setProducts] = useState<Product[]>([])
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
 
-  const user = authService.getCurrentUser()
-
   useEffect(() => {
-    if (!user) {
-      router.push("/login")
-      return
-    }
-    if (user.role !== "seller") {
-      router.push("/")
-      return
-    }
+    if (!user) return
 
+    setLoading(true)
     Promise.all([
       productService.getStoreProducts(user.id).catch(() => [] as Product[]),
       orderService.getStoreOrders(user.id).catch(() => [] as Order[]),
@@ -41,10 +32,20 @@ export default function SellerDashboard() {
       setOrders(fetchedOrders)
       setLoading(false)
     })
-  }, [router, user?.id])
+  }, [user])
 
-  if (!user || user.role !== "seller") {
-    return null
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <main className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
+    )
   }
 
   const totalRevenue = orders.reduce((sum, o) => sum + o.total_price, 0)

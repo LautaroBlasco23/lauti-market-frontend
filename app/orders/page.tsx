@@ -8,9 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, PackageIcon } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { authService } from "@/lib/auth-service"
 import { orderService, type Order } from "@/lib/order-service"
-import { useRouter } from "next/navigation"
+import { useRequireAuth } from "@/contexts/auth-context"
 
 const statusColors = {
   pending: "default",
@@ -21,32 +20,34 @@ const statusColors = {
 } as const
 
 export default function OrdersPage() {
-  const router = useRouter()
+  const { user, isLoading: authLoading } = useRequireAuth(["buyer"])
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
 
-  const user = authService.getCurrentUser()
-
   useEffect(() => {
-    if (!user) {
-      router.push("/login")
-      return
-    }
-    if (user.role !== "buyer") {
-      router.push("/seller")
-      return
-    }
+    if (!user) return
 
+    setLoading(true)
     orderService
       .getUserOrders(user.id)
       .then(setOrders)
       .catch(() => setOrders([]))
       .finally(() => setLoading(false))
-  }, [router, user?.id])
+  }, [user])
 
-  if (!user || user.role !== "buyer") {
-    return null
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <main className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
+    )
   }
 
   const handleCancel = async (orderId: string) => {

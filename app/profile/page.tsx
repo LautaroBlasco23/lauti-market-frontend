@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,46 +10,60 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { User, Mail, Store, ShoppingBag } from "lucide-react"
-import { authService } from "@/lib/auth-service"
 import { userService, type UserProfile } from "@/lib/user-service"
 import { storeService, type StoreProfile } from "@/lib/store-service"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function ProfilePage() {
-  const router = useRouter()
-  const [currentUser, setCurrentUser] = useState(authService.getCurrentUser())
+  const { user, isLoading: authLoading, refreshUser } = useAuth()
   const [profile, setProfile] = useState<UserProfile | StoreProfile | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const user = authService.getCurrentUser()
-    if (!user) {
-      router.push("/login")
-      return
-    }
-    setCurrentUser(user)
+    if (!user) return
 
+    setIsLoading(true)
     if (user.role === "buyer") {
-      userService.getUser(user.id).then(setProfile).catch(() => null)
+      userService.getUser(user.id)
+        .then(setProfile)
+        .catch(() => null)
+        .finally(() => setIsLoading(false))
     } else {
-      storeService.getStore(user.id).then(setProfile).catch(() => null)
+      storeService.getStore(user.id)
+        .then(setProfile)
+        .catch(() => null)
+        .finally(() => setIsLoading(false))
     }
-  }, [router])
+  }, [user])
 
-  if (!currentUser) {
-    return null
+  if (authLoading || !user) {
+    return (
+      <>
+        <SiteHeader />
+        <main className="min-h-screen bg-muted/30">
+          <div className="container mx-auto px-4 py-8">
+            <div className="flex items-center justify-center h-64">
+              <p className="text-muted-foreground">Loading...</p>
+            </div>
+          </div>
+        </main>
+        <SiteFooter />
+      </>
+    )
   }
 
-  const isBuyer = currentUser.role === "buyer"
+  const isBuyer = user.role === "buyer"
   const buyerProfile = isBuyer ? (profile as UserProfile | null) : null
   const storeProfile = !isBuyer ? (profile as StoreProfile | null) : null
 
   const displayName = isBuyer
     ? buyerProfile
       ? `${buyerProfile.first_name} ${buyerProfile.last_name}`.trim()
-      : currentUser.name
-    : storeProfile?.name ?? currentUser.name
+      : user.name
+    : storeProfile?.name ?? user.name
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -60,26 +73,23 @@ export default function ProfilePage() {
     const form = e.currentTarget
     try {
       if (isBuyer) {
-        const updated = await userService.updateUser(currentUser.id, {
+        const updated = await userService.updateUser(user.id, {
           first_name: (form.elements.namedItem("first_name") as HTMLInputElement).value,
           last_name: (form.elements.namedItem("last_name") as HTMLInputElement).value,
         })
         setProfile(updated)
-        // Refresh name in localStorage
-        const refreshed = { ...currentUser, name: `${updated.first_name} ${updated.last_name}`.trim() }
-        localStorage.setItem("auth_user", JSON.stringify(refreshed))
-        setCurrentUser(refreshed)
+        // Refresh auth context to update name
+        await refreshUser()
       } else {
-        const updated = await storeService.updateStore(currentUser.id, {
+        const updated = await storeService.updateStore(user.id, {
           name: (form.elements.namedItem("name") as HTMLInputElement).value,
           description: (form.elements.namedItem("description") as HTMLTextAreaElement).value,
           address: (form.elements.namedItem("address") as HTMLInputElement).value,
           phone_number: (form.elements.namedItem("phone_number") as HTMLInputElement).value,
         })
         setProfile(updated)
-        const refreshed = { ...currentUser, name: updated.name }
-        localStorage.setItem("auth_user", JSON.stringify(refreshed))
-        setCurrentUser(refreshed)
+        // Refresh auth context to update name
+        await refreshUser()
       }
       setIsEditing(false)
     } catch (err: unknown) {
@@ -102,7 +112,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold">{displayName}</h1>
-                <p className="text-muted-foreground">{currentUser.email}</p>
+                <p className="text-muted-foreground">{user.email}</p>
               </div>
             </div>
 
@@ -225,7 +235,7 @@ export default function ProfilePage() {
                         <Mail className="size-4" />
                         <span>Email</span>
                       </div>
-                      <p className="font-medium">{currentUser.email}</p>
+                      <p className="font-medium">{user.email}</p>
                     </div>
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -233,7 +243,7 @@ export default function ProfilePage() {
                         <span>Account Type</span>
                       </div>
                       <Badge variant="secondary" className="capitalize">
-                        {currentUser.role}
+                        {user.role}
                       </Badge>
                     </div>
                   </div>

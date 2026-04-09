@@ -1,7 +1,5 @@
 "use client"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
@@ -14,26 +12,24 @@ const CheckoutForm = dynamic(
 )
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { authService } from "@/lib/auth-service"
+import { useRequireAuth } from "@/contexts/auth-context"
 
 export default function CheckoutPage() {
-  const router = useRouter()
+  const { user, isLoading } = useRequireAuth(["buyer"])
 
-  useEffect(() => {
-    const user = authService.getCurrentUser()
-    if (!user) {
-      router.push("/login")
-    } else if (user.role !== "buyer") {
-      router.push("/seller")
-    }
-  }, [router])
-
-  const user = authService.getCurrentUser()
-
-  if (!user || user.role !== "buyer") {
-    return null
+  if (isLoading || !user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <main className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
+    )
   }
-  // </CHANGE>
 
   return (
     <div className="min-h-screen bg-background">

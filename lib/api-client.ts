@@ -1,5 +1,18 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
 
+// Custom error class that includes status code
+export class ApiError extends Error {
+  status: number
+  fields: Record<string, string> | null
+
+  constructor(message: string, status: number, fields: Record<string, string> | null = null) {
+    super(message)
+    this.name = "ApiError"
+    this.status = status
+    this.fields = fields
+  }
+}
+
 export async function apiFetch<T = unknown>(
   path: string,
   options: RequestInit = {},
@@ -21,7 +34,8 @@ export async function apiFetch<T = unknown>(
   const data = await res.json().catch(() => ({}))
 
   if (!res.ok) {
-    throw { error: data.error ?? data.message ?? "Request failed", fields: data.fields ?? null }
+    const errorMessage = data.error ?? data.message ?? "Request failed"
+    throw new ApiError(errorMessage, res.status, data.fields ?? null)
   }
 
   return data as T

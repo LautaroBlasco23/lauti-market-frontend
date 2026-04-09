@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -15,8 +15,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { authService } from "@/lib/auth-service"
 import { productService } from "@/lib/product-service"
+import { useRequireAuth } from "@/contexts/auth-context"
 
 const schema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name must be at most 100 characters"),
@@ -39,18 +39,10 @@ type FormValues = z.infer<typeof schema>
 
 export default function NewProductPage() {
   const router = useRouter()
+  const { user, isLoading: authLoading } = useRequireAuth(["seller"])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-
-  useEffect(() => {
-    const user = authService.getCurrentUser()
-    if (!user) {
-      router.push("/login")
-    } else if (user.role !== "seller") {
-      router.push("/")
-    }
-  }, [router])
 
   const {
     register,
@@ -74,7 +66,6 @@ export default function NewProductPage() {
   }
 
   const onSubmit = async (values: FormValues) => {
-    const user = authService.getCurrentUser()
     if (!user) return
 
     try {
@@ -97,6 +88,20 @@ export default function NewProductPage() {
         setError("root", { message: e?.error ?? "Failed to create product" })
       }
     }
+  }
+
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <main className="container mx-auto px-4 py-8 max-w-2xl">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
+    )
   }
 
   return (

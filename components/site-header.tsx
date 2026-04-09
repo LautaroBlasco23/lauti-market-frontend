@@ -14,13 +14,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cartService } from "@/lib/mock-services"
-import { authService } from "@/lib/auth-service"
+import { useAuth } from "@/contexts/auth-context"
 
 export function SiteHeader() {
   const router = useRouter()
+  const { user, logout, isLoading } = useAuth()
   const [mounted, setMounted] = useState(false)
   const [cartItemCount, setCartItemCount] = useState(0)
-  const [currentUser, setCurrentUser] = useState(authService.getCurrentUser())
 
   useEffect(() => {
     setMounted(true)
@@ -34,24 +34,22 @@ export function SiteHeader() {
 
     updateCartCount()
 
-    // Poll for cart updates and auth state every second
+    // Poll for cart updates only (not auth state - AuthContext handles that)
     const interval = setInterval(() => {
       updateCartCount()
-      setCurrentUser(authService.getCurrentUser())
     }, 1000)
 
     return () => clearInterval(interval)
   }, [])
 
   const handleLogout = () => {
-    authService.logout()
-    setCurrentUser(null)
+    logout()
     router.push("/login")
     router.refresh()
   }
 
   // Consistent SSR/initial render state to avoid hydration mismatch
-  if (!mounted) {
+  if (!mounted || isLoading) {
     return (
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
@@ -82,15 +80,15 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
         {/* Logo */}
-        <Link href={currentUser?.role === "seller" ? "/seller" : "/"} className="flex items-center gap-2 shrink-0">
+        <Link href={user?.role === "seller" ? "/seller" : "/"} className="flex items-center gap-2 shrink-0">
           <Package className="size-6" />
           <span className="font-bold text-xl">Marketplace</span>
         </Link>
 
         {/* Navigation Links */}
-        {currentUser && (
+        {user && (
           <nav className="hidden md:flex items-center gap-1">
-            {currentUser.role === "buyer" && (
+            {user.role === "buyer" && (
               <>
                 <Button variant="ghost" asChild>
                   <Link href="/">
@@ -103,7 +101,7 @@ export function SiteHeader() {
                 </Button>
               </>
             )}
-            {currentUser.role === "seller" && (
+            {user.role === "seller" && (
               <>
                 <Button variant="ghost" asChild>
                   <Link href="/seller">
@@ -122,7 +120,7 @@ export function SiteHeader() {
         {/* Actions */}
         <div className="flex items-center gap-2">
           {/* Cart - only for buyers */}
-          {currentUser?.role === "buyer" && (
+          {user?.role === "buyer" && (
             <Button variant="ghost" size="icon" className="relative" asChild>
               <Link href="/cart">
                 <ShoppingCart className="size-5" />
@@ -139,32 +137,32 @@ export function SiteHeader() {
           )}
 
           {/* User Menu */}
-          {currentUser ? (
+          {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="gap-2">
                   <User className="size-4" />
-                  <span className="hidden sm:inline">{currentUser.name}</span>
+                  <span className="hidden sm:inline">{user.name}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium">{currentUser.name}</p>
-                  <p className="text-xs text-muted-foreground">{currentUser.email}</p>
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
                   <Badge variant="secondary" className="mt-1 text-xs">
-                    {currentUser.role === "buyer" ? "Buyer" : "Seller"}
+                    {user.role === "buyer" ? "Buyer" : "Seller"}
                   </Badge>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/profile">My Profile</Link>
                 </DropdownMenuItem>
-                {currentUser.role === "buyer" && (
+                {user.role === "buyer" && (
                   <DropdownMenuItem asChild>
                     <Link href="/orders">My Orders</Link>
                   </DropdownMenuItem>
                 )}
-                {currentUser.role === "seller" && (
+                {user.role === "seller" && (
                   <DropdownMenuItem asChild>
                     <Link href="/seller">
                       <Store className="size-4 mr-2" />

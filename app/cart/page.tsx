@@ -1,7 +1,5 @@
 "use client"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
@@ -9,24 +7,23 @@ import { CartItemsList } from "@/components/cart-items-list"
 import { CartSummary } from "@/components/cart-summary"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { authService } from "@/lib/auth-service"
+import { useRequireAuth } from "@/contexts/auth-context"
 
 export default function CartPage() {
-  const router = useRouter()
+  const { user, isLoading } = useRequireAuth(["buyer"])
 
-  useEffect(() => {
-    const user = authService.getCurrentUser()
-    if (!user) {
-      router.push("/login")
-    } else if (user.role !== "buyer") {
-      router.push("/seller")
-    }
-  }, [router])
-
-  const user = authService.getCurrentUser()
-
-  if (!user || user.role !== "buyer") {
-    return null
+  if (isLoading || !user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <main className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
+    )
   }
 
   return (

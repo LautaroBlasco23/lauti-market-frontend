@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { authService } from "@/lib/auth-service"
+import { useAuth } from "@/contexts/auth-context"
 
 const schema = z.object({
   email: z.string().email("Invalid email address"),
@@ -24,6 +25,8 @@ export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const registered = searchParams.get("registered") === "true"
+  const redirect = searchParams.get("redirect")
+  const { refreshUser } = useAuth()
 
   const [serverError, setServerError] = useState<string | null>(null)
 
@@ -37,7 +40,12 @@ export default function LoginPage() {
     setServerError(null)
     try {
       const user = await authService.login(values.email, values.password)
-      if (user.role === "seller") {
+      // Refresh auth context with new user data
+      await refreshUser()
+      // Redirect to original page or default based on role
+      if (redirect) {
+        router.push(redirect)
+      } else if (user.role === "seller") {
         router.push("/seller")
       } else {
         router.push("/")
