@@ -6,9 +6,10 @@ import type { Product } from "@/lib/product-service"
 
 interface ProductCardProps {
   product: Product
+  priority?: boolean
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, priority }: ProductCardProps) {
   return (
     <Link href={`/products/${product.id}`}>
       <Card className="group overflow-hidden transition-all hover:shadow-md cursor-pointer h-full">
@@ -18,6 +19,7 @@ export function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             fill
             className="object-cover transition-transform group-hover:scale-105"
+            priority={priority}
           />
           {product.stock < 10 && product.stock > 0 && (
             <Badge variant="secondary" className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm">

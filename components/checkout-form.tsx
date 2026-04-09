@@ -14,13 +14,25 @@ export function CheckoutForm() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [mpReady, setMpReady] = useState(false)
+  const [initError, setInitError] = useState<string | null>(null)
   const total = cartService.getTotal()
 
   useEffect(() => {
     const key = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY
     if (key) {
-      initMercadoPago(key, { locale: "es-AR" })
-      setMpReady(true)
+      try {
+        initMercadoPago(key, {
+          locale: "es-AR",
+          // Disable fraud prevention in test/localhost to avoid CORS issues
+          // with secure-fields.mercadopago.com iframe
+          advancedFraudPrevention: false,
+        })
+        setMpReady(true)
+      } catch (err) {
+        setInitError("Failed to initialize payment system. Please refresh the page.")
+      }
+    } else {
+      setInitError("Payment system not configured. Please contact support.")
     }
   }, [])
 
@@ -80,6 +92,15 @@ export function CheckoutForm() {
     }
   }
 
+  if (initError) {
+    return (
+      <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+        <p className="font-medium">Payment System Error</p>
+        <p className="text-sm">{initError}</p>
+      </div>
+    )
+  }
+
   if (!mpReady) {
     return (
       <div className="flex items-center justify-center py-12 text-muted-foreground">
@@ -93,9 +114,20 @@ export function CheckoutForm() {
       <CardPayment
         initialization={{ amount: total }}
         onSubmit={handleSubmit}
-        onError={(err) => setError(err.message)}
+        onError={(err) => {
+          // Check for CORS/network errors
+          if (err.message?.includes("NetworkError") || err.message?.includes("Failed to fetch")) {
+            setError("Connection error. This may be a temporary issue with the payment provider's test environment. Please try again in a few moments.")
+          } else {
+            setError(err.message)
+          }
+        }}
       />
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && (
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-destructive text-sm">
+          {error}
+        </div>
+      )}
     </div>
   )
 }

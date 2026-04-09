@@ -18,10 +18,13 @@ import { authService } from "@/lib/auth-service"
 
 export function SiteHeader() {
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
   const [cartItemCount, setCartItemCount] = useState(0)
   const [currentUser, setCurrentUser] = useState(authService.getCurrentUser())
 
   useEffect(() => {
+    setMounted(true)
+
     // Update cart count
     const updateCartCount = () => {
       const cart = cartService.getCart()
@@ -45,6 +48,34 @@ export function SiteHeader() {
     setCurrentUser(null)
     router.push("/login")
     router.refresh()
+  }
+
+  // Consistent SSR/initial render state to avoid hydration mismatch
+  if (!mounted) {
+    return (
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 shrink-0">
+            <Package className="size-6" />
+            <span className="font-bold text-xl">Marketplace</span>
+          </Link>
+
+          {/* Placeholder for navigation to maintain layout */}
+          <div className="hidden md:flex items-center gap-1" />
+
+          {/* Actions placeholder */}
+          <div className="flex items-center gap-2">
+            <Button asChild>
+              <Link href="/login">
+                <LogIn className="size-4 mr-2" />
+                Sign In
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </header>
+    )
   }
 
   return (

@@ -50,8 +50,8 @@ function BuyerForm({ onSuccess }: { onSuccess: () => void }) {
       await authService.registerUser(values)
       onSuccess()
     } catch (err: unknown) {
-      const e = err as { error?: string }
-      setServerError(e?.error ?? "Registration failed")
+      const e = err as { error?: string; message?: string }
+      setServerError(e?.error ?? e?.message ?? "Registration failed")
     }
   }
 
@@ -102,8 +102,8 @@ function SellerForm({ onSuccess }: { onSuccess: () => void }) {
       await authService.registerStore(values)
       onSuccess()
     } catch (err: unknown) {
-      const e = err as { error?: string }
-      setServerError(e?.error ?? "Registration failed")
+      const e = err as { error?: string; message?: string }
+      setServerError(e?.error ?? e?.message ?? "Registration failed")
     }
   }
 
@@ -151,8 +151,12 @@ function SellerForm({ onSuccess }: { onSuccess: () => void }) {
 export default function RegisterPage() {
   const router = useRouter()
 
-  const handleSuccess = () => {
-    router.push("/login?registered=true")
+  const handleBuyerSuccess = () => {
+    router.push("/")
+  }
+
+  const handleSellerSuccess = () => {
+    router.push("/seller")
   }
 
   return (
@@ -175,10 +179,10 @@ export default function RegisterPage() {
                 <TabsTrigger value="seller" className="flex-1">Seller</TabsTrigger>
               </TabsList>
               <TabsContent value="buyer">
-                <BuyerForm onSuccess={handleSuccess} />
+                <BuyerForm onSuccess={handleBuyerSuccess} />
               </TabsContent>
               <TabsContent value="seller">
-                <SellerForm onSuccess={handleSuccess} />
+                <SellerForm onSuccess={handleSellerSuccess} />
               </TabsContent>
             </Tabs>
 

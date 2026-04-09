@@ -31,6 +31,14 @@ interface RegisterStoreData {
   phone_number: string
 }
 
+interface RegisterResponse {
+  auth_id: string
+  account_id: string
+  account_type: string
+  email: string
+  token: string
+}
+
 export const authService = {
   login: async (email: string, password: string): Promise<User> => {
     const res = await apiFetch<LoginResponse>("/auth/login", {
@@ -81,17 +89,46 @@ export const authService = {
     return localStorage.getItem("auth_token") !== null
   },
 
-  registerUser: async (data: RegisterUserData): Promise<void> => {
-    await apiFetch("/auth/register/user", {
+  registerUser: async (data: RegisterUserData): Promise<User> => {
+    const res = await apiFetch<RegisterResponse>("/auth/register/user", {
       method: "POST",
       body: JSON.stringify(data),
     })
+
+    // Store token before fetching profile (apiFetch reads it from localStorage)
+    localStorage.setItem("auth_token", res.token)
+
+    const profile = await apiFetch<{ first_name: string; last_name: string }>(`/users/${res.account_id}`)
+    const name = `${profile.first_name} ${profile.last_name}`.trim()
+
+    const user: User = {
+      id: res.account_id,
+      name,
+      email: res.email,
+      role: "buyer",
+    }
+    localStorage.setItem("auth_user", JSON.stringify(user))
+    return user
   },
 
-  registerStore: async (data: RegisterStoreData): Promise<void> => {
-    await apiFetch("/auth/register/store", {
+  registerStore: async (data: RegisterStoreData): Promise<User> => {
+    const res = await apiFetch<RegisterResponse>("/auth/register/store", {
       method: "POST",
       body: JSON.stringify(data),
     })
+
+    // Store token before fetching profile (apiFetch reads it from localStorage)
+    localStorage.setItem("auth_token", res.token)
+
+    const store = await apiFetch<{ name: string }>(`/stores/${res.account_id}`)
+
+    const user: User = {
+      id: res.account_id,
+      name: store.name,
+      email: res.email,
+      role: "seller",
+    }
+    localStorage.setItem("auth_user", JSON.stringify(user))
+    return user
   },
 }
