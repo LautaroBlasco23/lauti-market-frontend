@@ -3,10 +3,15 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
-import { CheckoutForm } from "@/components/checkout-form"
 import { CheckoutSummary } from "@/components/checkout-summary"
+
+const CheckoutForm = dynamic(
+  () => import("@/components/checkout-form").then((m) => ({ default: m.CheckoutForm })),
+  { ssr: false },
+)
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { authService } from "@/lib/auth-service"

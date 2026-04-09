@@ -5,19 +5,27 @@ import { CheckCircle } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 
+// MP appends these query params on redirect:
+// collection_id, collection_status, payment_id, status, external_reference, payment_type, merchant_order_id
 export default async function CheckoutSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ orderIds?: string; status?: string }>
+  searchParams: Promise<{
+    external_reference?: string
+    collection_status?: string
+    status?: string
+    payment_id?: string
+  }>
 }) {
   const params = await searchParams
-  const orderIds = params.orderIds?.split(",").filter(Boolean) ?? []
-  const status = params.status ?? "approved"
+
+  // external_reference holds comma-separated order IDs set when creating the preference.
+  const orderIds = params.external_reference?.split(",").filter(Boolean) ?? []
+  const status = params.collection_status ?? params.status ?? "approved"
   const isApproved = status === "approved"
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <SiteHeader />
 
       <main className="container mx-auto px-4 py-12">
@@ -64,7 +72,6 @@ export default async function CheckoutSuccessPage({
         </div>
       </main>
 
-      {/* Footer */}
       <SiteFooter />
     </div>
   )

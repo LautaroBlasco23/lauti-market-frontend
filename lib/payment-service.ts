@@ -1,10 +1,13 @@
 import { apiFetch } from "./api-client"
 
-export interface CreatePaymentRequest {
-  order_id: string
-  card_token: string
-  payer_email: string
-  installments?: number
+export interface CreatePreferenceRequest {
+  order_ids: string[]
+}
+
+export interface CreatePreferenceResponse {
+  preference_id: string
+  init_point: string
+  sandbox_init_point: string
 }
 
 export type PaymentStatus =
@@ -24,13 +27,14 @@ export interface PaymentResponse {
   status: PaymentStatus
   status_detail: string
   payment_method: string
+  preference_id: string
   created_at: string
   updated_at: string
 }
 
 export const paymentService = {
-  createPayment: (data: CreatePaymentRequest): Promise<PaymentResponse> =>
-    apiFetch<PaymentResponse>("/payments", {
+  createPreference: (data: CreatePreferenceRequest): Promise<CreatePreferenceResponse> =>
+    apiFetch<CreatePreferenceResponse>("/payments", {
       method: "POST",
       body: JSON.stringify(data),
     }),
