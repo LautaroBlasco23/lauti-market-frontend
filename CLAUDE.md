@@ -5,10 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev       # Start Next.js dev server
+make dev          # Start Next.js dev server
 npm run build     # Production build
 npm run lint      # Run ESLint
-make start        # Interactive mode selection (dev/docker/prod)
 ```
 
 Environment: copy `.env.local` and set `NEXT_PUBLIC_API_URL` to the backend URL (default: `http://localhost:8000`).
