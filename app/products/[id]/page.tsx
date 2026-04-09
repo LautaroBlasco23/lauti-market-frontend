@@ -92,7 +92,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Sold by</p>
-                    <p className="font-semibold">{product.store_id}</p>
+                    <p className="font-semibold">{product.store_name || product.store_id}</p>
                   </div>
                 </div>
                 <Button variant="outline" className="w-full bg-transparent" asChild>

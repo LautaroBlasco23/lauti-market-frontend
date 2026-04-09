@@ -3,6 +3,7 @@ import { apiFetch } from "./api-client"
 export interface Product {
   id: string
   store_id: string
+  store_name?: string
   name: string
   description: string
   category: string

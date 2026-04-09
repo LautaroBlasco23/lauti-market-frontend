@@ -82,7 +82,7 @@ export function CartItemsList() {
                       >
                         {item.product.name}
                       </Link>
-                      <p className="text-sm text-muted-foreground mt-1">by {item.product.store_id}</p>
+                      <p className="text-sm text-muted-foreground mt-1">by {item.product.store_name || item.product.store_id}</p>
                     </div>
                     <Button variant="ghost" size="icon-sm" onClick={() => removeItem(item.product.id)}>
                       <Trash2 className="size-4" />

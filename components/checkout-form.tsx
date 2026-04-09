@@ -1,30 +1,33 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import type { ComponentProps } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { CreditCard, Loader2 } from "lucide-react"
+import { initMercadoPago, CardPayment } from "@mercadopago/sdk-react"
 import { cartService } from "@/lib/mock-services"
 import { orderService } from "@/lib/order-service"
+import { paymentService } from "@/lib/payment-service"
+
+type CardPaymentData = Parameters<ComponentProps<typeof CardPayment>["onSubmit"]>[0]
 
 export function CheckoutForm() {
   const router = useRouter()
-  const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mpReady, setMpReady] = useState(false)
+  const total = cartService.getTotal()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsProcessing(true)
+  useEffect(() => {
+    const key = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY
+    if (key) {
+      initMercadoPago(key, { locale: "es-AR" })
+      setMpReady(true)
+    }
+  }, [])
+
+  const handleSubmit = async (formData: CardPaymentData) => {
     setError(null)
 
     const items = cartService.getCart()
-
-    // Group items by store_id (backend requires one order per store)
     const byStore = new Map<string, { product_id: string; quantity: number }[]>()
     for (const { product, quantity } of items) {
       const storeItems = byStore.get(product.store_id) ?? []
@@ -33,124 +36,66 @@ export function CheckoutForm() {
     }
 
     try {
-      await Promise.all(
+      const orders = await Promise.all(
         Array.from(byStore.entries()).map(([store_id, storeItems]) =>
           orderService.createOrder({ store_id, items: storeItems }),
         ),
       )
+
+      const payments = await Promise.all(
+        orders.map((order) =>
+          paymentService.createPayment({
+            order_id: order.id,
+            card_token: formData.token,
+            payer_email: formData.payer.email ?? "",
+            installments: formData.installments,
+          }),
+        ),
+      )
+
+      const failed = payments.some(
+        (p) => p.status === "rejected" || p.status === "cancelled",
+      )
+      if (failed) {
+        const err = new Error("payment_rejected")
+        setError("Payment was rejected. Please check your card details and try again.")
+        throw err
+      }
+
+      const overallStatus = payments.every((p) => p.status === "approved")
+        ? "approved"
+        : "in_process"
+
       cartService.clearCart()
-      router.push("/checkout/success")
+      router.push(
+        `/checkout/success?orderIds=${orders.map((o) => o.id).join(",")}&status=${overallStatus}`,
+      )
     } catch (err: unknown) {
-      const msg = (err as { error?: string })?.error ?? "Failed to place order. Please try again."
-      setError(msg)
-      setIsProcessing(false)
+      if ((err as Error).message !== "payment_rejected") {
+        setError(
+          (err as { error?: string })?.error ?? "Payment failed. Please try again.",
+        )
+      }
+      throw err
     }
   }
 
+  if (!mpReady) {
+    return (
+      <div className="flex items-center justify-center py-12 text-muted-foreground">
+        Loading payment form...
+      </div>
+    )
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Contact Information */}
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle>Contact Information</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6 gap-4 flex flex-col">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
-              <Input id="firstName" placeholder="John" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input id="lastName" placeholder="Doe" required />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="john@example.com" required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" type="tel" placeholder="+1 (555) 000-0000" required />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Shipping Address */}
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle>Shipping Address</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6 gap-4 flex flex-col">
-          <div className="space-y-2">
-            <Label htmlFor="address">Street Address</Label>
-            <Input id="address" placeholder="123 Main St" required />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="city">City</Label>
-              <Input id="city" placeholder="New York" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="state">State</Label>
-              <Input id="state" placeholder="NY" required />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="zip">ZIP Code</Label>
-              <Input id="zip" placeholder="10001" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="country">Country</Label>
-              <Input id="country" placeholder="United States" required />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Payment Information */}
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle>Payment Information</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6 gap-4 flex flex-col">
-          <div className="space-y-2">
-            <Label htmlFor="cardName">Name on Card</Label>
-            <Input id="cardName" placeholder="John Doe" required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="cardNumber">Card Number</Label>
-            <div className="relative">
-              <Input id="cardNumber" placeholder="1234 5678 9012 3456" required className="pl-10" />
-              <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="expiry">Expiry Date</Label>
-              <Input id="expiry" placeholder="MM/YY" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="cvc">CVC</Label>
-              <Input id="cvc" placeholder="123" required maxLength={4} />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
+    <div className="space-y-4">
+      <CardPayment
+        initialization={{ amount: total }}
+        onSubmit={handleSubmit}
+        onError={(err) => setError(err.message)}
+      />
       {error && <p className="text-sm text-destructive">{error}</p>}
-
-      <Button type="submit" size="lg" className="w-full" disabled={isProcessing}>
-        {isProcessing ? (
-          <>
-            <Loader2 className="size-5 animate-spin" />
-            Processing...
-          </>
-        ) : (
-          "Place Order"
-        )}
-      </Button>
-    </form>
+    </div>
   )
 }

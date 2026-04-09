@@ -40,7 +40,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
           <div className="flex items-center justify-between mt-2">
             <span className="text-lg font-bold">${product.price.toFixed(2)}</span>
-            <span className="text-xs text-muted-foreground">by {product.store_id}</span>
+            <span className="text-xs text-muted-foreground">by {product.store_name || product.store_id}</span>
           </div>
         </CardContent>
       </Card>
