@@ -3,12 +3,25 @@ import { Search } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { productService, type Product } from "@/lib/product-service"
+import { storeService } from "@/lib/store-service"
 import { ProductCatalog } from "@/components/product-catalog"
 
 export default async function HomePage() {
-  const { products } = await productService.getAllProducts({ limit: 100 }).catch(() => ({ products: [] as Product[] }))
+  const [{ products }, stores] = await Promise.all([
+    productService.getAllProducts({ limit: 100 }).catch(() => ({ products: [] as Product[] })),
+    storeService.getAllStores().catch(() => []),
+  ])
 
-  const categories = ["All", ...Array.from(new Set(products.map((p) => p.category))).sort()]
+  // Create store ID to name mapping
+  const storeMap = new Map(stores.map((s) => [s.id, s.name]))
+
+  // Enrich products with store names
+  const enrichedProducts = products.map((p) => ({
+    ...p,
+    store_name: storeMap.get(p.store_id) || p.store_id,
+  }))
+
+  const categories = ["All", ...Array.from(new Set(enrichedProducts.map((p) => p.category))).sort()]
 
   return (
     <div className="min-h-screen bg-background">
@@ -29,7 +42,7 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <ProductCatalog products={products} categories={categories} />
+        <ProductCatalog products={enrichedProducts} categories={categories} />
       </main>
 
       <SiteFooter />

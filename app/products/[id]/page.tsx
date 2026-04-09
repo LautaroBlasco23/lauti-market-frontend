@@ -10,6 +10,7 @@ import { AddToCartButton } from "@/components/add-to-cart-button"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { productService } from "@/lib/product-service"
+import { storeService } from "@/lib/store-service"
 
 interface ProductPageProps {
   params: Promise<{ id: string }>
@@ -23,6 +24,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   if (!product) {
     notFound()
+  }
+
+  // Fetch store name for this product
+  const store = await storeService.getStore(product.store_id).catch(() => null)
+  const enrichedProduct = {
+    ...product,
+    store_name: store?.name || product.store_id,
   }
 
   return (
@@ -42,8 +50,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
           {/* Product Image */}
           <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
             <Image
-              src={product.image_url || "/placeholder.svg"}
-              alt={product.name}
+              src={enrichedProduct.image_url || "/placeholder.svg"}
+              alt={enrichedProduct.name}
               fill
               className="object-cover"
               priority
@@ -54,19 +62,19 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <div className="flex flex-col gap-6">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <Badge variant="outline">{product.category}</Badge>
-                {product.stock < 10 && product.stock > 0 && <Badge variant="secondary">Low Stock</Badge>}
-                {product.stock === 0 && <Badge variant="destructive">Out of Stock</Badge>}
+                <Badge variant="outline">{enrichedProduct.category}</Badge>
+                {enrichedProduct.stock < 10 && enrichedProduct.stock > 0 && <Badge variant="secondary">Low Stock</Badge>}
+                {enrichedProduct.stock === 0 && <Badge variant="destructive">Out of Stock</Badge>}
               </div>
-              <h1 className="text-4xl font-bold mb-4 text-balance">{product.name}</h1>
-              <p className="text-lg text-muted-foreground text-pretty">{product.description}</p>
+              <h1 className="text-4xl font-bold mb-4 text-balance">{enrichedProduct.name}</h1>
+              <p className="text-lg text-muted-foreground text-pretty">{enrichedProduct.description}</p>
             </div>
 
             <Separator />
 
             {/* Price */}
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold">${product.price.toFixed(2)}</span>
+              <span className="text-4xl font-bold">${enrichedProduct.price.toFixed(2)}</span>
               <span className="text-muted-foreground">per item</span>
             </div>
 
@@ -74,12 +82,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <div className="flex items-center gap-2 text-sm">
               <Package className="size-4 text-muted-foreground" />
               <span className="text-muted-foreground">
-                {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
+                {enrichedProduct.stock > 0 ? `${enrichedProduct.stock} in stock` : "Out of stock"}
               </span>
             </div>
 
             {/* Add to Cart */}
-            <AddToCartButton product={product} />
+            <AddToCartButton product={enrichedProduct} />
 
             <Separator />
 
@@ -92,11 +100,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Sold by</p>
-                    <p className="font-semibold">{product.store_name || product.store_id}</p>
+                    <p className="font-semibold">{enrichedProduct.store_name}</p>
                   </div>
                 </div>
                 <Button variant="outline" className="w-full bg-transparent" asChild>
-                  <Link href={`/stores/${product.store_id}`}>Visit Store</Link>
+                  <Link href={`/stores/${enrichedProduct.store_id}`}>Visit Store</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -108,15 +116,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Category</p>
-                    <p className="font-medium">{product.category}</p>
+                    <p className="font-medium">{enrichedProduct.category}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Product ID</p>
-                    <p className="font-medium truncate">#{product.id}</p>
+                    <p className="font-medium truncate">#{enrichedProduct.id}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Availability</p>
-                    <p className="font-medium">{product.stock > 0 ? "In Stock" : "Out of Stock"}</p>
+                    <p className="font-medium">{enrichedProduct.stock > 0 ? "In Stock" : "Out of Stock"}</p>
                   </div>
                 </div>
               </CardContent>
