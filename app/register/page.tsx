@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { authService } from "@/lib/auth-service"
 import { useAuth } from "@/contexts/auth-context"
+import { getErrorMessage } from "@/lib/error-utils"
 
 // ── Buyer schema ──────────────────────────────────────────────────────────────
 const buyerSchema = z.object({
@@ -51,8 +52,8 @@ function BuyerForm({ onSuccess }: { onSuccess: () => void }) {
       await authService.registerUser(values)
       onSuccess()
     } catch (err: unknown) {
-      const e = err as { error?: string; message?: string }
-      setServerError(e?.error ?? e?.message ?? "Registration failed")
+      const message = getErrorMessage(err, "Registration failed")
+      setServerError(message)
     }
   }
 
@@ -103,8 +104,8 @@ function SellerForm({ onSuccess }: { onSuccess: () => void }) {
       await authService.registerStore(values)
       onSuccess()
     } catch (err: unknown) {
-      const e = err as { error?: string; message?: string }
-      setServerError(e?.error ?? e?.message ?? "Registration failed")
+      const message = getErrorMessage(err, "Registration failed")
+      setServerError(message)
     }
   }
 

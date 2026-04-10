@@ -13,6 +13,7 @@ import { User, Mail, Store, ShoppingBag } from "lucide-react"
 import { userService, type UserProfile } from "@/lib/user-service"
 import { storeService, type StoreProfile } from "@/lib/store-service"
 import { useAuth } from "@/contexts/auth-context"
+import { getErrorMessage } from "@/lib/error-utils"
 
 export default function ProfilePage() {
   const { user, isLoading: authLoading, refreshUser } = useAuth()
@@ -93,7 +94,8 @@ export default function ProfilePage() {
       }
       setIsEditing(false)
     } catch (err: unknown) {
-      setSaveError((err as { error?: string })?.error ?? "Failed to save changes.")
+      const message = getErrorMessage(err, "Failed to save changes.")
+      setSaveError(message)
     } finally {
       setIsSaving(false)
     }

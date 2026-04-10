@@ -1,22 +1,25 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowLeft, ImagePlus, X } from "lucide-react"
+import { ArrowLeft, ImagePlus, X, AlertCircle, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { productService } from "@/lib/product-service"
+import { storeService, type MPConnectionStatus } from "@/lib/store-service"
 import { useRequireAuth } from "@/contexts/auth-context"
+import { getErrorMessage, getFieldErrors } from "@/lib/error-utils"
 
 const schema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name must be at most 100 characters"),
@@ -43,6 +46,26 @@ export default function NewProductPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [mpStatus, setMpStatus] = useState<MPConnectionStatus | null>(null)
+  const [mpLoading, setMpLoading] = useState(true)
+
+  useEffect(() => {
+    if (!user) return
+
+    setMpLoading(true)
+    storeService
+      .getMPConnectionStatus(user.id)
+      .then((status) => {
+        setMpStatus(status)
+        setMpLoading(false)
+      })
+      .catch(() => {
+        setMpStatus(null)
+        setMpLoading(false)
+      })
+  }, [user])
+
+  const isMPConnected = mpStatus?.connected && mpStatus?.is_token_valid
 
   const {
     register,
@@ -79,18 +102,19 @@ export default function NewProductPage() {
       })
       router.push("/seller")
     } catch (err: unknown) {
-      const e = err as { error?: string; fields?: Record<string, string> }
-      if (e?.fields) {
-        for (const [field, message] of Object.entries(e.fields)) {
+      const fieldErrors = getFieldErrors(err)
+      if (fieldErrors) {
+        for (const [field, message] of Object.entries(fieldErrors)) {
           setError(field as keyof FormValues, { message })
         }
       } else {
-        setError("root", { message: e?.error ?? "Failed to create product" })
+        const message = getErrorMessage(err, "Failed to create product")
+        setError("root", { message })
       }
     }
   }
 
-  if (authLoading || !user) {
+  if (authLoading || !user || mpLoading) {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
@@ -98,6 +122,48 @@ export default function NewProductPage() {
           <div className="flex items-center justify-center h-64">
             <p className="text-muted-foreground">Loading...</p>
           </div>
+        </main>
+        <SiteFooter />
+      </div>
+    )
+  }
+
+  if (!isMPConnected) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <main className="container mx-auto px-4 py-8 max-w-2xl">
+          <Button variant="ghost" asChild className="mb-6">
+            <Link href="/seller">
+              <ArrowLeft className="size-4" />
+              Back to Dashboard
+            </Link>
+          </Button>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Connect MercadoPago Required</CardTitle>
+              <CardDescription>You need to connect your MercadoPago account before creating products</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>MercadoPago Account Not Connected</AlertTitle>
+                <AlertDescription className="flex flex-col gap-4 mt-2">
+                  <p>
+                    To create products and receive payments, you must connect your MercadoPago account first.
+                    Without a connected payment account, customers won&apos;t be able to purchase your products.
+                  </p>
+                  <Button asChild className="w-fit">
+                    <Link href={`/stores/${user.id}/mercadopago/connect`}>
+                      <CreditCard className="size-4 mr-2" />
+                      Connect MercadoPago Account
+                    </Link>
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
         </main>
         <SiteFooter />
       </div>

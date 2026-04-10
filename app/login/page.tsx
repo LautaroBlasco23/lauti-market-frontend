@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { authService } from "@/lib/auth-service"
 import { useAuth } from "@/contexts/auth-context"
+import { getErrorMessage } from "@/lib/error-utils"
 
 const schema = z.object({
   email: z.string().email("Invalid email address"),
@@ -52,8 +53,8 @@ export default function LoginPage() {
       }
       router.refresh()
     } catch (err: unknown) {
-      const e = err as { error?: string }
-      setServerError(e?.error ?? "Invalid credentials")
+      const message = getErrorMessage(err, "Invalid credentials")
+      setServerError(message)
     }
   }
 

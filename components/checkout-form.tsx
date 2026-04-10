@@ -6,20 +6,24 @@ import { Button } from "@/components/ui/button"
 import { cartService } from "@/lib/mock-services"
 import { orderService } from "@/lib/order-service"
 import { paymentService } from "@/lib/payment-service"
+import { toast } from "@/hooks/use-toast"
+import { getErrorMessage } from "@/lib/error-utils"
 
 export function CheckoutForm() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const handleCheckout = async () => {
     setLoading(true)
-    setError(null)
 
     try {
       const items = cartService.getCart()
       if (items.length === 0) {
-        setError("Your cart is empty.")
+        toast({
+          title: "Empty cart",
+          description: "Your cart is empty. Add some items before checking out.",
+          variant: "destructive",
+        })
         return
       }
 
@@ -44,10 +48,21 @@ export function CheckoutForm() {
 
       cartService.clearCart()
 
+      toast({
+        title: "Redirecting to MercadoPago",
+        description: "Please wait while we redirect you to complete your payment...",
+      })
+
       // Redirect to MercadoPago's hosted checkout (sandbox in test mode).
       window.location.href = preference.sandbox_init_point
-    } catch (err: any) {
-      setError(err?.error ?? err?.message ?? "An unexpected error occurred.")
+    } catch (err: unknown) {
+      const errorMessage = getErrorMessage(err, "Failed to process payment. Please try again.")
+      
+      toast({
+        title: "Payment Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
@@ -63,12 +78,6 @@ export function CheckoutForm() {
       >
         {loading ? "Redirecting to MercadoPago..." : "Pay with MercadoPago"}
       </Button>
-
-      {error && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-destructive text-sm">
-          {error}
-        </div>
-      )}
     </div>
   )
 }
