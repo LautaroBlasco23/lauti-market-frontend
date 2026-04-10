@@ -14,6 +14,7 @@ import { userService, type UserProfile } from "@/lib/user-service"
 import { storeService, type StoreProfile } from "@/lib/store-service"
 import { useAuth } from "@/contexts/auth-context"
 import { getErrorMessage } from "@/lib/error-utils"
+import Link from "next/link"
 
 export default function ProfilePage() {
   const { user, isLoading: authLoading, refreshUser } = useAuth()
@@ -278,7 +279,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="pt-2">
                     <Button asChild>
-                      <a href="/">Browse Products</a>
+                      <Link href="/">Browse Products</Link>
                     </Button>
                   </div>
                 </CardContent>
@@ -307,7 +308,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="pt-2">
                     <Button asChild>
-                      <a href="/seller">Go to Dashboard</a>
+                      <Link href="/seller">Go to Dashboard</Link>
                     </Button>
                   </div>
                 </CardContent>

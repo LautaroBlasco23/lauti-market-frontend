@@ -1,16 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { cartService } from "@/lib/mock-services"
-import { orderService } from "@/lib/order-service"
 import { paymentService } from "@/lib/payment-service"
 import { toast } from "@/hooks/use-toast"
 import { getErrorMessage } from "@/lib/error-utils"
 
 export function CheckoutForm() {
-  const router = useRouter()
   const [loading, setLoading] = useState(false)
 
   const handleCheckout = async () => {
@@ -27,33 +24,24 @@ export function CheckoutForm() {
         return
       }
 
-      // Group cart items by store and create one order per store.
-      const byStore = new Map<string, { product_id: string; quantity: number }[]>()
-      for (const { product, quantity } of items) {
-        const storeItems = byStore.get(product.store_id) ?? []
-        storeItems.push({ product_id: product.id, quantity })
-        byStore.set(product.store_id, storeItems)
-      }
+      // Convert cart items to preference items
+      const preferenceItems = items.map(({ product, quantity }) => ({
+        product_id: product.id,
+        quantity,
+        unit_price: product.price,
+      }))
 
-      const orders = await Promise.all(
-        Array.from(byStore.entries()).map(([store_id, storeItems]) =>
-          orderService.createOrder({ store_id, items: storeItems }),
-        ),
-      )
-
-      // Create a single Checkout Pro preference covering all orders.
-      const preference = await paymentService.createPreference({
-        order_ids: orders.map((o) => o.id),
+      // Create payment preference with cart items (NOT order IDs)
+      const preference = await paymentService.createCartPreference({
+        items: preferenceItems,
       })
-
-      cartService.clearCart()
 
       toast({
         title: "Redirecting to MercadoPago",
         description: "Please wait while we redirect you to complete your payment...",
       })
 
-      // Redirect to MercadoPago's hosted checkout (sandbox in test mode).
+      // DO NOT clear cart here - only clear on success page
       window.location.href = preference.sandbox_init_point
     } catch (err: unknown) {
       const errorMessage = getErrorMessage(err, "Failed to process payment. Please try again.")

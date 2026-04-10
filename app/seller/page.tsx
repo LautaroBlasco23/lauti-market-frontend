@@ -5,13 +5,15 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { DollarSign, TrendingUp, Plus, Package, ShoppingBag } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { DollarSign, TrendingUp, Plus, Package, ShoppingBag, AlertCircle, CreditCard } from "lucide-react"
 import { SellerProductsTable } from "@/components/seller-products-table"
 import { SellerOrdersTable } from "@/components/seller-orders-table"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { productService, type Product } from "@/lib/product-service"
 import { orderService, type Order } from "@/lib/order-service"
+import { storeService, type MPConnectionStatus } from "@/lib/store-service"
 import { useRequireAuth } from "@/contexts/auth-context"
 
 export default function SellerDashboard() {
@@ -19,20 +21,28 @@ export default function SellerDashboard() {
   const [products, setProducts] = useState<Product[]>([])
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [mpStatus, setMpStatus] = useState<MPConnectionStatus | null>(null)
+  const [mpLoading, setMpLoading] = useState(true)
 
   useEffect(() => {
     if (!user) return
 
     setLoading(true)
+    setMpLoading(true)
     Promise.all([
       productService.getStoreProducts(user.id).catch(() => [] as Product[]),
       orderService.getStoreOrders(user.id).catch(() => [] as Order[]),
-    ]).then(([fetchedProducts, fetchedOrders]) => {
+      storeService.getMPConnectionStatus(user.id).catch(() => null),
+    ]).then(([fetchedProducts, fetchedOrders, fetchedMpStatus]) => {
       setProducts(fetchedProducts)
       setOrders(fetchedOrders)
+      setMpStatus(fetchedMpStatus)
       setLoading(false)
+      setMpLoading(false)
     })
   }, [user])
+
+  const isMPConnected = mpStatus?.connected && mpStatus?.is_token_valid
 
   if (authLoading || !user) {
     return (
@@ -65,6 +75,26 @@ export default function SellerDashboard() {
           <h1 className="text-4xl font-bold mb-2">Seller Dashboard</h1>
           <p className="text-muted-foreground">Welcome back, {user.name}</p>
         </div>
+
+        {/* MercadoPago Connection Warning */}
+        {!mpLoading && !isMPConnected && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>MercadoPago Account Not Connected</AlertTitle>
+            <AlertDescription className="flex flex-col gap-2">
+              <p>
+                You need to connect your MercadoPago account to create products and receive payments.
+                Without it, customers won&apos;t be able to buy your products.
+              </p>
+              <Button asChild variant="outline" size="sm" className="w-fit">
+                <Link href={`/stores/${user.id}/mercadopago/connect`}>
+                  <CreditCard className="size-4 mr-2" />
+                  Connect MercadoPago Account
+                </Link>
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -124,7 +154,7 @@ export default function SellerDashboard() {
                 <CardTitle>Your Products</CardTitle>
                 <CardDescription>Manage your product listings</CardDescription>
               </div>
-              <Button asChild>
+              <Button asChild disabled={!isMPConnected}>
                 <Link href="/seller/products/new">
                   <Plus className="size-4" />
                   Add Product

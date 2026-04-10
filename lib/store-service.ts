@@ -8,6 +8,13 @@ export interface StoreProfile {
   phone_number: string
 }
 
+export interface MPConnectionStatus {
+  connected: boolean
+  connected_at: string | null
+  expires_at: string | null
+  is_token_valid: boolean
+}
+
 export const storeService = {
   getAllStores: (): Promise<StoreProfile[]> =>
     apiFetch<StoreProfile[]>("/stores"),
@@ -20,4 +27,7 @@ export const storeService = {
 
   deleteStore: (id: string): Promise<void> =>
     apiFetch<void>(`/stores/${id}`, { method: "DELETE" }),
+
+  getMPConnectionStatus: (storeId: string): Promise<MPConnectionStatus> =>
+    apiFetch<MPConnectionStatus>(`/stores/${storeId}/mercadopago/status`),
 }

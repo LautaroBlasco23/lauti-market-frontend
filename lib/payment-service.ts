@@ -32,9 +32,25 @@ export interface PaymentResponse {
   updated_at: string
 }
 
+export interface CartItem {
+  product_id: string
+  quantity: number
+  unit_price: number
+}
+
+export interface CreateCartPreferenceRequest {
+  items: CartItem[]
+}
+
 export const paymentService = {
   createPreference: (data: CreatePreferenceRequest): Promise<CreatePreferenceResponse> =>
     apiFetch<CreatePreferenceResponse>("/payments", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  createCartPreference: (data: CreateCartPreferenceRequest): Promise<CreatePreferenceResponse> =>
+    apiFetch<CreatePreferenceResponse>("/payments/cart", {
       method: "POST",
       body: JSON.stringify(data),
     }),
