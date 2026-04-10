@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { authService } from "@/lib/auth-service"
+import { useAuth } from "@/contexts/auth-context"
 
 // ── Buyer schema ──────────────────────────────────────────────────────────────
 const buyerSchema = z.object({
@@ -150,12 +151,15 @@ function SellerForm({ onSuccess }: { onSuccess: () => void }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function RegisterPage() {
   const router = useRouter()
+  const { refreshUser } = useAuth()
 
-  const handleBuyerSuccess = () => {
+  const handleBuyerSuccess = async () => {
+    await refreshUser()
     router.push("/")
   }
 
-  const handleSellerSuccess = () => {
+  const handleSellerSuccess = async () => {
+    await refreshUser()
     router.push("/seller")
   }
 
