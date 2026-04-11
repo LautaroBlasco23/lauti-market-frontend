@@ -5,13 +5,20 @@ export interface OrderItem {
   product_id: string
   quantity: number
   unit_price: number
+  product_name?: string
+  product_image_url?: string
 }
+
+export type OrderStatus = "pending" | "confirmed" | "shipped" | "delivered" | "cancelled"
+export type PaymentStatus = "pending" | "approved" | "rejected" | "cancelled" | "in_process" | "not_paid"
 
 export interface Order {
   id: string
   user_id: string
   store_id: string
-  status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled"
+  status: OrderStatus
+  payment_status: PaymentStatus
+  payment_id?: string
   items: OrderItem[]
   total_price: number
   created_at: string

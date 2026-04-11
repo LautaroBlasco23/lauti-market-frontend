@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,20 +10,39 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { User, Mail, Store, ShoppingBag } from "lucide-react"
+import { User, Mail, Store, ShoppingBag, Package, ArrowRight } from "lucide-react"
 import { userService, type UserProfile } from "@/lib/user-service"
 import { storeService, type StoreProfile } from "@/lib/store-service"
+import { orderService, type Order, type OrderStatus, type PaymentStatus } from "@/lib/order-service"
 import { useAuth } from "@/contexts/auth-context"
 import { getErrorMessage } from "@/lib/error-utils"
-import Link from "next/link"
+
+const orderStatusColors: Record<OrderStatus, "default" | "secondary" | "outline" | "destructive"> = {
+  pending: "default",
+  confirmed: "secondary",
+  shipped: "outline",
+  delivered: "secondary",
+  cancelled: "destructive",
+}
+
+const paymentStatusColors: Record<PaymentStatus, "default" | "secondary" | "outline" | "destructive"> = {
+  pending: "default",
+  approved: "secondary",
+  rejected: "destructive",
+  cancelled: "destructive",
+  in_process: "outline",
+  not_paid: "destructive",
+}
 
 export default function ProfilePage() {
   const { user, isLoading: authLoading, refreshUser } = useAuth()
   const [profile, setProfile] = useState<UserProfile | StoreProfile | null>(null)
+  const [recentOrders, setRecentOrders] = useState<Order[]>([])
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [ordersLoading, setOrdersLoading] = useState(true)
 
   useEffect(() => {
     if (!user) return
@@ -33,6 +53,13 @@ export default function ProfilePage() {
         .then(setProfile)
         .catch(() => null)
         .finally(() => setIsLoading(false))
+      
+      // Fetch recent orders for buyers
+      setOrdersLoading(true)
+      orderService.getUserOrders(user.id, 3)
+        .then(setRecentOrders)
+        .catch(() => setRecentOrders([]))
+        .finally(() => setOrdersLoading(false))
     } else {
       storeService.getStore(user.id)
         .then(setProfile)
@@ -257,31 +284,61 @@ export default function ProfilePage() {
             {/* Role-specific features */}
             {isBuyer && (
               <Card>
-                <CardHeader>
-                  <CardTitle>Buyer Features</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="size-5" />
+                    Recent Orders
+                  </CardTitle>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/orders">
+                      View All
+                      <ArrowRight className="size-4 ml-1" />
+                    </Link>
+                  </Button>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                    <ShoppingBag className="size-5 text-primary mt-0.5" />
-                    <div>
-                      <h4 className="font-medium">Browse Products</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Explore thousands of products from verified sellers
-                      </p>
+                <CardContent>
+                  {ordersLoading ? (
+                    <div className="text-center py-8 text-muted-foreground">Loading orders...</div>
+                  ) : recentOrders.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Package className="size-12 mx-auto text-muted-foreground mb-3" />
+                      <p className="text-muted-foreground mb-4">No orders yet</p>
+                      <Button asChild>
+                        <Link href="/">Start Shopping</Link>
+                      </Button>
                     </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                    <ShoppingBag className="size-5 text-primary mt-0.5" />
-                    <div>
-                      <h4 className="font-medium">Track Orders</h4>
-                      <p className="text-sm text-muted-foreground">Monitor your order status and delivery updates</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {recentOrders.map((order) => (
+                        <div
+                          key={order.id}
+                          className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-medium truncate">Order #{order.id}</p>
+                              <Badge variant={orderStatusColors[order.status]} className="capitalize text-xs">
+                                {order.status}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {order.items.length} {order.items.length === 1 ? "item" : "items"} • {" "}
+                              {new Date(order.created_at).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </p>
+                          </div>
+                          <div className="text-right ml-4">
+                            <p className="font-semibold">${order.total_price.toFixed(2)}</p>
+                            <Button variant="ghost" size="sm" asChild className="h-auto p-0">
+                              <Link href={`/orders/${order.id}`}>View Details</Link>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                  <div className="pt-2">
-                    <Button asChild>
-                      <Link href="/">Browse Products</Link>
-                    </Button>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             )}

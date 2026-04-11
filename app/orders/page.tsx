@@ -5,19 +5,57 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { ArrowLeft, PackageIcon } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { orderService, type Order } from "@/lib/order-service"
+import { orderService, type Order, type OrderStatus, type PaymentStatus } from "@/lib/order-service"
 import { useRequireAuth } from "@/contexts/auth-context"
+import { toast } from "@/hooks/use-toast"
 
-const statusColors = {
+const orderStatusColors: Record<OrderStatus, "default" | "secondary" | "outline" | "destructive"> = {
   pending: "default",
   confirmed: "secondary",
   shipped: "outline",
   delivered: "secondary",
   cancelled: "destructive",
-} as const
+}
+
+const paymentStatusColors: Record<PaymentStatus, "default" | "secondary" | "outline" | "destructive"> = {
+  pending: "default",
+  approved: "secondary",
+  rejected: "destructive",
+  cancelled: "destructive",
+  in_process: "outline",
+  not_paid: "destructive",
+}
+
+const orderStatusLabels: Record<OrderStatus, string> = {
+  pending: "Pending",
+  confirmed: "Confirmed",
+  shipped: "Shipped",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+}
+
+const paymentStatusLabels: Record<PaymentStatus, string> = {
+  pending: "Payment Pending",
+  approved: "Paid",
+  rejected: "Payment Failed",
+  cancelled: "Payment Cancelled",
+  in_process: "Processing Payment",
+  not_paid: "Not Paid",
+}
 
 export default function OrdersPage() {
   const { user, isLoading: authLoading } = useRequireAuth(["buyer"])
@@ -55,6 +93,16 @@ export default function OrdersPage() {
     try {
       const updated = await orderService.updateOrderStatus(orderId, "cancelled")
       setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
+      toast({
+        title: "Order Cancelled",
+        description: "Your order has been cancelled successfully.",
+      })
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to cancel order. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setCancellingId(null)
     }
@@ -95,7 +143,7 @@ export default function OrdersPage() {
             {orders.map((order) => (
               <Card key={order.id}>
                 <CardHeader className="border-b">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div>
                       <CardTitle className="text-lg">Order #{order.id}</CardTitle>
                       <p className="text-sm text-muted-foreground mt-1">
@@ -107,37 +155,65 @@ export default function OrdersPage() {
                         })}
                       </p>
                     </div>
-                    <Badge variant={statusColors[order.status]} className="capitalize">
-                      {order.status}
-                    </Badge>
+                    <div className="flex gap-2">
+                      <Badge variant={orderStatusColors[order.status]} className="capitalize">
+                        {orderStatusLabels[order.status]}
+                      </Badge>
+                      <Badge variant={paymentStatusColors[order.payment_status || "not_paid"]} className="capitalize">
+                        {paymentStatusLabels[order.payment_status || "not_paid"]}
+                      </Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                       <p className="font-semibold mb-1">
                         {order.items.length} {order.items.length === 1 ? "item" : "items"}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {order.items.map((item) => `${item.quantity}x ${item.product_id}`).join(", ")}
+                        {order.items.map((item) => 
+                          `${item.quantity}x ${item.product_name || item.product_id}`
+                        ).join(", ")}
                       </p>
                     </div>
                     <div className="text-right flex flex-col items-end gap-2">
                       <p className="font-bold text-lg">${order.total_price.toFixed(2)}</p>
                       <div className="flex gap-2">
                         {order.status === "pending" && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="bg-transparent text-destructive hover:text-destructive"
-                            disabled={cancellingId === order.id}
-                            onClick={() => handleCancel(order.id)}
-                          >
-                            {cancellingId === order.id ? "Cancelling..." : "Cancel Order"}
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="bg-transparent text-destructive hover:text-destructive"
+                                disabled={cancellingId === order.id}
+                              >
+                                {cancellingId === order.id ? "Cancelling..." : "Cancel Order"}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Cancel Order</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to cancel order #{order.id}? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Keep Order</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleCancel(order.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  disabled={cancellingId === order.id}
+                                >
+                                  {cancellingId === order.id ? "Cancelling..." : "Yes, Cancel Order"}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         )}
-                        <Button variant="outline" size="sm" className="bg-transparent">
-                          View Details
+                        <Button variant="outline" size="sm" className="bg-transparent" asChild>
+                          <Link href={`/orders/${order.id}`}>View Details</Link>
                         </Button>
                       </div>
                     </div>

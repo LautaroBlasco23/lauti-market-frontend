@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ShoppingCart, Check, Minus, Plus } from "lucide-react"
+import { ShoppingCart, Check, Minus, Plus, Zap } from "lucide-react"
 import { cartService } from "@/lib/mock-services"
 import type { Product } from "@/lib/product-service"
 
@@ -11,6 +12,7 @@ interface AddToCartButtonProps {
 }
 
 export function AddToCartButton({ product }: AddToCartButtonProps) {
+  const router = useRouter()
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
 
@@ -18,6 +20,11 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
     cartService.addToCart(product, quantity)
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
+  }
+
+  const handleBuyNow = () => {
+    cartService.addToCart(product, quantity)
+    router.push("/cart")
   }
 
   const incrementQuantity = () => {
@@ -52,22 +59,43 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
         </div>
       )}
 
-      {/* Add to Cart Button */}
-      <Button size="lg" onClick={handleAddToCart} disabled={isOutOfStock || added} className="w-full">
-        {added ? (
-          <>
-            <Check className="size-5" />
-            Added to Cart
-          </>
-        ) : isOutOfStock ? (
-          "Out of Stock"
-        ) : (
-          <>
-            <ShoppingCart className="size-5" />
-            Add to Cart
-          </>
-        )}
-      </Button>
+      {/* Action Buttons */}
+      <div className="flex flex-col gap-3">
+        {/* Buy Now Button */}
+        <Button
+          size="lg"
+          variant="secondary"
+          onClick={handleBuyNow}
+          disabled={isOutOfStock}
+          className="w-full"
+        >
+          <Zap className="size-5" />
+          Buy Now
+        </Button>
+
+        {/* Add to Cart Button */}
+        <Button
+          size="lg"
+          onClick={handleAddToCart}
+          disabled={isOutOfStock || added}
+          className="w-full"
+          variant="outline"
+        >
+          {added ? (
+            <>
+              <Check className="size-5" />
+              Added to Cart
+            </>
+          ) : isOutOfStock ? (
+            "Out of Stock"
+          ) : (
+            <>
+              <ShoppingCart className="size-5" />
+              Add to Cart
+            </>
+          )}
+        </Button>
+      </div>
 
       {!isOutOfStock && (
         <p className="text-sm text-muted-foreground text-center">Total: ${(product.price * quantity).toFixed(2)}</p>
