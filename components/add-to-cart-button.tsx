@@ -64,10 +64,10 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
         {/* Buy Now Button */}
         <Button
           size="lg"
-          variant="secondary"
+          variant="outline"
           onClick={handleBuyNow}
           disabled={isOutOfStock}
-          className="w-full"
+          className="w-full cursor-pointer"
         >
           <Zap className="size-5" />
           Buy Now
@@ -78,7 +78,7 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
           size="lg"
           onClick={handleAddToCart}
           disabled={isOutOfStock || added}
-          className="w-full"
+          className="w-full cursor-pointer"
           variant="outline"
         >
           {added ? (
