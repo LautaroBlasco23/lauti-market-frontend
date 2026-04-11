@@ -1,16 +1,23 @@
 # Lauti Market Frontend
 
-Frontend for my marketplace personal project, built with Next.js.
+Frontend for my marketplace personal project, built with Next.js 16 + TypeScript + shadcn/ui.
 
 ## Run
 
 ```bash
 cp .env.local.example .env.local  # set NEXT_PUBLIC_API_URL
 npm install
-npm run dev
+make dev          # or: npm run dev
 ```
 
 Server starts on `:3000`.
+
+## Build
+
+```bash
+npm run build     # Production build
+npm run lint      # Run ESLint
+```
 
 ## CI/CD
 
