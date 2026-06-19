@@ -1,5 +1,7 @@
 # Lauti Market Frontend
 
+> **⚠️ Project status:** This is a learning project built to practice Next.js, TypeScript, and modern frontend patterns. It is not maintained, will not receive new features, and is not intended for production use. The code is here for reference and learning purposes.
+
 Frontend for my marketplace personal project, built with Next.js 16 + TypeScript + shadcn/ui.
 
 ## Run
